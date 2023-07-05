@@ -524,14 +524,31 @@ func (r *Resource) pack(msg []byte, compression map[string]int, compressionOff i
 
 // A Parser allows incrementally parsing a DNS message.
 //
-// When parsing is started, the Header is parsed. Next, each Question can be
-// either parsed or skipped. Alternatively, all Questions can be skipped at
-// once. When all Questions have been parsed, attempting to parse Questions
-// will return (nil, nil) and attempting to skip Questions will return
-// (true, nil). After all Questions have been either parsed or skipped, all
-// Answers, Authorities and Additionals can be either parsed or skipped in the
-// same way, and each type of Resource must be fully parsed or skipped before
-// proceeding to the next type of Resource.
+// Parser allows parsing one section of a DNS message at a time.
+// When initialized using the [Parser.Start] method, the parser is set to
+// the questions section. When all of the questions/resoures are
+// parsed from the currently parsing section, then the parser is moved to the
+// next section automatically.
+//
+// Depending on the parsing section, one of thease methods: [Parser.Question],
+// [Parser.AnswerHeader], [Parser.AuthorityHeader], [Parser.AdditionalHeader]
+// should be used to parse the questions or resource header.
+//
+// After parsing the resource header the resource data parsing methods can be used
+// to parse the resource data: [Parser.AResource], [Parser.AAAAResource], [Parser.CNAMEResource],
+// [Parser.MXResource], [Parser.NSResource], [Parser.OPTResource], [Parser.PTRResource],
+// [Parser.SOAResource], [Parser.SRVResource], [Parser.TXTResource].
+// The resource data can also be skipped using one of: [Parser.SkipAnswer], [Parser.SkipAuthority],
+// [Parser.SkipAdditional].
+//
+// When no more resources/questions are available in the currently parsing section the
+// [Parser.Question], [Parser.AnswerHeader], [Parser.AuthorityHeader], [Parser.AdditionalHeader]
+// methods return [ErrSectionDone]. This error informs that the parsing section has been changed
+// and you can safely parse the next section.
+// These methods might also return [ErrNotStarted], this informs that the previous sections
+// haven't been parsed fully yet.
+//
+// Parser is safe to copy to preserve the parsing state.
 //
 // Note that there is no requirement to fully skip or parse the message.
 type Parser struct {
